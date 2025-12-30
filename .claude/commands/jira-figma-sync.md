@@ -149,19 +149,37 @@ def extract_text_from_adf(adf_body):
 
 ---
 
-### Step 3: Figma 파일 정보 가져오기
+### Step 3: Figma 정보 수집 (개선된 방식 ⭐)
 
-#### Option A: Figma API 사용 (Token 있을 때)
+#### 핵심 개선사항
+
+**Before (문제점)**:
+- ❌ Files API로 전체 파일 다운로드 (169,349 Frame) → 타임아웃
+- ❌ 임의로 5개 Frame만 선택 → 의미 없는 데이터
+
+**After (개선)**:
+- ✅ **Nodes API**로 특정 Frame만 조회 → 빠름!
+- ✅ **Comments API**로 Frame별 댓글 수집 → 변경사항 추적
+- ✅ **JIRA 댓글 텍스트**에서 변경사항 설명 추출
+
+#### Step 3-1: Figma Nodes API로 Frame 정보 가져오기
 
 ```python
-def get_figma_file_info(file_id):
+def get_figma_frame_info(file_id, node_id):
     """
-    Figma API로 파일 정보 가져오기
+    Figma Nodes API로 특정 Frame 정보 가져오기
+
+    Before: Files API (전체 파일 다운로드, 느림)
+    After: Nodes API (특정 Node만 조회, 빠름!)
     """
     if not FIGMA_ACCESS_TOKEN:
         return None
 
-    url = f"https://api.figma.com/v1/files/{file_id}"
+    # URL node-id 형식(10953-47730) → API 형식(10953:47730) 변환
+    figma_node_id = node_id.replace('-', ':')
+
+    # Nodes API 사용
+    url = f"https://api.figma.com/v1/files/{file_id}/nodes?ids={figma_node_id}"
 
     response = requests.get(
         url,
@@ -169,45 +187,89 @@ def get_figma_file_info(file_id):
     )
 
     if response.status_code != 200:
-        print(f"Warning: Figma API failed ({response.status_code})")
+        print(f"Warning: Figma Nodes API failed ({response.status_code})")
         return None
 
     data = response.json()
 
-    return {
-        'name': data['name'],
-        'lastModified': data['lastModified'],
-        'version': data['version'],
-        'frames': extract_frames(data['document'])
-    }
+    # Node 정보 추출
+    if figma_node_id in data.get('nodes', {}):
+        node_info = data['nodes'][figma_node_id]
+        return {
+            'file_name': data.get('name', 'Unknown File'),
+            'frame_name': node_info['document'].get('name', 'Unknown Frame'),
+            'node_id': figma_node_id,
+            'last_modified': data.get('lastModified', '')
+        }
 
-def extract_frames(node, frames=None):
+    return None
+
+def get_figma_comments(file_id, node_id):
     """
-    Figma 파일에서 Frame 목록 추출
+    Figma Comments API로 Frame별 댓글 가져오기
     """
-    if frames is None:
-        frames = []
+    if not FIGMA_ACCESS_TOKEN:
+        return []
 
-    if node['type'] == 'FRAME':
-        frames.append({
-            'id': node['id'],
-            'name': node['name'],
-            'type': node['type']
-        })
+    figma_node_id = node_id.replace('-', ':')
 
-    if 'children' in node:
-        for child in node['children']:
-            extract_frames(child, frames)
+    url = f"https://api.figma.com/v1/files/{file_id}/comments"
 
-    return frames
+    response = requests.get(
+        url,
+        headers={"X-Figma-Token": FIGMA_ACCESS_TOKEN}
+    )
+
+    if response.status_code != 200:
+        return []
+
+    all_comments = response.json().get('comments', [])
+
+    # 특정 Node의 댓글만 필터링
+    node_comments = [
+        c for c in all_comments
+        if c.get('client_meta') and
+           c['client_meta'].get('node_id') == figma_node_id
+    ]
+
+    return node_comments
 ```
 
-#### Option B: 링크 파싱 (Token 없을 때)
+#### Step 3-2: JIRA 댓글에서 변경사항 설명 추출
 
 ```python
-def parse_figma_link(link):
+def extract_change_description_from_comment(comment_body, figma_url):
     """
-    Figma 링크에서 기본 정보 추출
+    JIRA 댓글에서 Figma 링크 다음 줄의 변경사항 설명 추출
+
+    예시:
+    https://www.figma.com/design/xxx?node-id=10953-47730
+    로그인 버튼 텍스트 변경: "로그인" → "Sign In"
+
+    → "로그인 버튼 텍스트 변경: "로그인" → "Sign In"" 추출
+    """
+    text = extract_text_from_adf(comment_body)
+
+    # Figma 링크 이후의 텍스트 찾기
+    if figma_url in text:
+        # URL 이후의 텍스트 추출
+        after_url = text.split(figma_url, 1)[1].strip()
+
+        # 첫 줄만 추출 (여러 줄인 경우)
+        lines = after_url.split('\n')
+        if lines and lines[0].strip():
+            return lines[0].strip()
+
+    # blockCard 형태인 경우 (URL만 있고 텍스트 없음)
+    return None
+```
+
+#### Step 3-3: 링크 파싱 (Fallback)
+
+```python
+def parse_figma_link_fallback(link):
+    """
+    Figma Token이 없을 때 기본 정보만 추출
     """
     return {
         'file_id': link['file_id'],
@@ -219,77 +281,230 @@ def parse_figma_link(link):
 
 ---
 
-### Step 4: Description 업데이트 내용 생성
+### Step 4: Description 포맷 검증 및 수정
+
+#### Step 4-1: 6섹션 구조 검증
 
 ```python
-def create_figma_section(figma_links, figma_info_list):
+def validate_description_format(description_adf):
     """
-    Description에 추가할 Figma 섹션 생성 (ADF 형식)
+    Description이 6섹션 구조를 따르는지 검증
+
+    필수 섹션:
+    1. 요구사항
+    2. 해결방안
+    3. 디자인 의도
+    4. 화면 구성
+    5. Step
+    6. 결과
     """
-    content = []
+    required_sections = [
+        "요구사항",
+        "해결방안",
+        "디자인 의도",
+        "화면 구성",
+        "Step",
+        "결과"
+    ]
 
-    # 헤더
-    content.append({
-        "type": "heading",
-        "attrs": {"level": 2},
-        "content": [{"type": "text", "text": "🎨 디자인 업데이트"}]
-    })
+    content = description_adf.get('content', [])
 
-    # Figma 링크별 정보
-    for link, info in zip(figma_links, figma_info_list):
-        # 파일명
-        content.append({
-            "type": "heading",
-            "attrs": {"level": 3},
-            "content": [{"type": "text", "text": f"📄 {info['file_name']}"}]
-        })
+    found_sections = []
+    for item in content:
+        if item.get('type') == 'heading':
+            heading_text = extract_text_from_adf(item)
+            for section in required_sections:
+                if section in heading_text:
+                    found_sections.append(section)
 
-        # 메타 정보
-        content.append({
-            "type": "paragraph",
-            "content": [
-                {"type": "text", "text": "업데이트: ", "marks": [{"type": "strong"}]},
-                {"type": "text", "text": link['created'][:10]},
-                {"type": "text", "text": " | 담당: ", "marks": [{"type": "strong"}]},
-                {"type": "text", "text": link['author']}
-            ]
-        })
+    missing_sections = [s for s in required_sections if s not in found_sections]
 
-        # Figma 링크
-        content.append({
-            "type": "paragraph",
-            "content": [
-                {"type": "text", "text": "🔗 ", "marks": [{"type": "strong"}]},
-                {
-                    "type": "text",
-                    "text": "Figma에서 보기",
-                    "marks": [{"type": "link", "attrs": {"href": link['url']}}]
-                }
-            ]
-        })
+    return {
+        'is_valid': len(missing_sections) == 0,
+        'missing_sections': missing_sections,
+        'found_sections': found_sections
+    }
 
-        # Frame 목록 (API 사용 시)
-        if info.get('frames'):
-            content.append({
+def create_default_description():
+    """
+    6섹션 구조의 기본 Description 생성
+    """
+    return {
+        "type": "doc",
+        "version": 1,
+        "content": [
+            {
+                "type": "heading",
+                "attrs": {"level": 2},
+                "content": [{"type": "text", "text": "요구사항"}]
+            },
+            {
                 "type": "paragraph",
-                "content": [{"type": "text", "text": "Frame 목록:", "marks": [{"type": "strong"}]}]
-            })
+                "content": [{"type": "text", "text": "(작성 필요)"}]
+            },
+            {
+                "type": "heading",
+                "attrs": {"level": 2},
+                "content": [{"type": "text", "text": "해결방안"}]
+            },
+            {
+                "type": "paragraph",
+                "content": [{"type": "text", "text": "(작성 필요)"}]
+            },
+            {
+                "type": "heading",
+                "attrs": {"level": 2},
+                "content": [{"type": "text", "text": "디자인 의도"}]
+            },
+            {
+                "type": "paragraph",
+                "content": [{"type": "text", "text": "(작성 필요)"}]
+            },
+            {
+                "type": "heading",
+                "attrs": {"level": 2},
+                "content": [{"type": "text", "text": "화면 구성"}]
+            },
+            {
+                "type": "paragraph",
+                "content": [{"type": "text", "text": "업데이트 이력:", "marks": [{"type": "strong"}]}]
+            },
+            {
+                "type": "table",
+                "content": [
+                    {
+                        "type": "tableRow",
+                        "content": [
+                            {"type": "tableHeader", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "날짜"}]}]},
+                            {"type": "tableHeader", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "작성자"}]}]},
+                            {"type": "tableHeader", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "변경 내용"}]}]}
+                        ]
+                    }
+                ]
+            },
+            {
+                "type": "heading",
+                "attrs": {"level": 2},
+                "content": [{"type": "text", "text": "Step"}]
+            },
+            {
+                "type": "paragraph",
+                "content": [{"type": "text", "text": "(작성 필요)"}]
+            },
+            {
+                "type": "heading",
+                "attrs": {"level": 2},
+                "content": [{"type": "text", "text": "결과"}]
+            },
+            {
+                "type": "paragraph",
+                "content": [{"type": "text", "text": "작업 완료 후 업데이트 예정"}]
+            }
+        ]
+    }
+```
 
-            frame_list = {"type": "bulletList", "content": []}
-            for frame in info['frames']:
-                frame_list["content"].append({
-                    "type": "listItem",
+#### Step 4-2: Figma 섹션 생성 (개선된 버전)
+
+```python
+def create_figma_update_rows(figma_data_list):
+    """
+    화면 구성 테이블에 추가할 업데이트 행 생성
+
+    figma_data: {
+        'file_name': str,
+        'frame_name': str,
+        'node_id': str,
+        'jira_comment_change': str,  # JIRA 댓글의 변경사항 설명
+        'figma_comments': list,      # Figma의 댓글들
+        'author': str,
+        'created': str,
+        'url': str
+    }
+    """
+    rows = []
+
+    for data in figma_data_list:
+        # 날짜
+        date_str = data['created'][:10]
+
+        # 작성자
+        author = data['author']
+
+        # 변경 내용 조합
+        changes = []
+
+        # 1. Frame 정보
+        if data.get('frame_name'):
+            changes.append(f"📄 {data['frame_name']}")
+
+        # 2. JIRA 댓글의 변경사항 설명
+        if data.get('jira_comment_change'):
+            changes.append(data['jira_comment_change'])
+
+        # 3. Figma 댓글 요약
+        if data.get('figma_comments'):
+            for comment in data['figma_comments'][:2]:  # 최대 2개만
+                msg = comment.get('message', '')[:100]  # 최대 100자
+                changes.append(f"💬 {msg}")
+
+        # 4. Figma 링크
+        changes.append({
+            "type": "text",
+            "text": "🔗 Figma에서 보기",
+            "marks": [{"type": "link", "attrs": {"href": data['url']}}]
+        })
+
+        # 테이블 행 생성
+        row = {
+            "type": "tableRow",
+            "content": [
+                {
+                    "type": "tableCell",
                     "content": [{
                         "type": "paragraph",
-                        "content": [{"type": "text", "text": frame['name']}]
+                        "content": [{"type": "text", "text": date_str}]
                     }]
-                })
-            content.append(frame_list)
+                },
+                {
+                    "type": "tableCell",
+                    "content": [{
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": author}]
+                    }]
+                },
+                {
+                    "type": "tableCell",
+                    "content": create_change_content(changes)
+                }
+            ]
+        }
 
-        # 구분선
-        content.append({"type": "rule"})
+        rows.append(row)
 
-    return content
+    return rows
+
+def create_change_content(changes):
+    """
+    변경 내용을 ADF paragraph 리스트로 변환
+    """
+    paragraphs = []
+
+    for change in changes:
+        if isinstance(change, str):
+            paragraphs.append({
+                "type": "paragraph",
+                "content": [{"type": "text", "text": change}]
+            })
+        elif isinstance(change, dict):
+            # 링크 등
+            paragraphs.append({
+                "type": "paragraph",
+                "content": [change]
+            })
+
+    return paragraphs
+```
 
 def append_to_description(jira_key, figma_section):
     """
@@ -501,38 +716,66 @@ Worktree 분석 중...
 
 ---
 
-## 사용 예시
+## 사용 예시 (개선된 버전 ⭐)
 
-### 예시 1: 단일 티켓 동기화
+### 예시 1: JIRA 댓글에 변경사항 작성
 
-```bash
-# 1. JIRA 티켓에 댓글 작성
-# "디자인 시안 업데이트: https://www.figma.com/file/ABC123/User-Profile"
+**JIRA 티켓 CD-279에 댓글 작성**:
 
-# 2. 동기화 실행
-/jira-figma-sync CD-123
-
-# 3. Description에 자동 추가됨:
-# 🎨 디자인 업데이트
-# 📄 User Profile
-# 🔗 Figma에서 보기
-# Frame 목록:
-# • Profile Header
-# • User Info Card
+```
+https://www.figma.com/design/PsCISK2RuhCPs8FZurojeP/KIA-IDCX?node-id=10953-47730
+로그인 버튼 텍스트 변경: "로그인" → "Sign In"
 ```
 
-### 예시 2: 여러 링크 동기화
-
+**동기화 실행**:
 ```bash
-# 댓글 1: "메인 화면: https://www.figma.com/file/ABC123/Main"
-# 댓글 2: "컴포넌트: https://www.figma.com/file/DEF456/Components"
-
-/jira-figma-sync CD-124
-
-# Description에 두 파일 모두 추가됨
+/jira-figma-sync CD-279
 ```
 
-### 예시 3: 전체 Worktree 동기화
+**결과 (Description 화면 구성 테이블)**:
+| 날짜 | 작성자 | 변경 내용 |
+|------|--------|----------|
+| 2025-12-30 | vision | 📄 C_0101<br>로그인 버튼 텍스트 변경: "로그인" → "Sign In"<br>🔗 [Figma에서 보기](링크) |
+
+### 예시 2: Figma 댓글 자동 수집
+
+**Figma에서 Frame에 댓글 작성**:
+```
+"See More 버튼 추가 필요"
+```
+
+**JIRA 댓글에 링크만 추가**:
+```
+https://www.figma.com/design/xxx?node-id=10953-47782
+```
+
+**동기화 실행**:
+```bash
+/jira-figma-sync CD-279
+```
+
+**결과**:
+| 날짜 | 작성자 | 변경 내용 |
+|------|--------|----------|
+| 2025-12-30 | vision | 📄 C_0101_disclaimer modal<br>💬 See More 버튼 추가 필요<br>🔗 [Figma에서 보기](링크) |
+
+### 예시 3: Description 포맷 자동 수정
+
+**Before (비어있거나 불완전한 Description)**:
+```
+(빈 Description)
+```
+
+**동기화 실행**:
+```bash
+/jira-figma-sync CD-279
+```
+
+**결과**:
+- ✅ 6섹션 구조 자동 생성 (요구사항, 해결방안, 디자인 의도, 화면 구성, Step, 결과)
+- ✅ 화면 구성 테이블에 Figma 업데이트 자동 추가
+
+### 예시 4: 전체 Worktree 동기화
 
 ```bash
 /jira-figma-sync --all
