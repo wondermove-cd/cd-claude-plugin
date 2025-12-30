@@ -78,27 +78,19 @@ flowchart LR
 
 ### 1단계: 설치
 
-**원클릭 설치 (권장)**:
+> **Private 레포지토리 - 팀 계정(wondermove-cd) SSH 키 필요**
 
 ```bash
-# 프로젝트 폴더로 이동
-cd /path/to/your-project
+# 1. 플러그인 클론 (최초 1회)
+cd ~/repos
+git clone git@github.com:wondermove-cd/cd-claude-plugin.git
 
-# 설치 스크립트 실행
-curl -fsSL https://raw.githubusercontent.com/wondermove-cd/cd-claude-plugin/main/install.sh | bash
+# 2. 프로젝트에 설치
+cd /path/to/your-project
+bash ~/repos/cd-claude-plugin/install.sh
 ```
 
-**수동 설치**:
-
-```bash
-# 레포지토리 클론
-git clone https://github.com/wondermove-cd/cd-claude-plugin.git
-
-# 프로젝트로 복사
-cd /path/to/your-project
-cp -r cd-claude-plugin/.claude .
-cp cd-claude-plugin/CLAUDE.md .
-```
+**상세 가이드**: [INSTALL.md](./INSTALL.md) 참조
 
 ### 2단계: 프로젝트 초기화
 

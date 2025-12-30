@@ -1,74 +1,59 @@
 # CD Claude Plugin - 설치 가이드
 
+> **Private 레포지토리 - 팀 계정(wondermove-cd) 사용**
+
 ## 📦 설치 방법
 
-### 방법 1: 원클릭 설치 (권장)
-
-프로젝트 폴더에서 다음 명령어를 실행하세요:
+### Step 1: 플러그인 레포지토리 클론 (최초 1회)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wondermove-cd/cd-claude-plugin/main/install.sh | bash
+# 플러그인을 다운로드할 위치로 이동 (예: ~/repos)
+cd ~/repos
+
+# 레포지토리 클론
+git clone git@github.com:wondermove-cd/cd-claude-plugin.git
 ```
 
-**설치 과정**:
-1. 기존 `.claude` 폴더가 있으면 자동 백업
-2. 플러그인 파일 다운로드 및 복사
-3. 필요한 디렉토리 구조 생성
-4. `.gitignore` 자동 생성 (없는 경우)
-
-**완료 후**:
-```
-============================================
- 설치 완료!
-============================================
-
-📂 설치된 구조:
-  .claude/          - 플러그인 파일
-  CLAUDE.md         - 메인 설정 파일
-  .ux-docs/         - UX 문서 저장소
-  .claude-state/    - 런타임 상태
-
-🚀 다음 단계:
-  1. Claude Code 실행
-  2. /ux init "프로젝트명" 또는 /ux onboard
-  3. /ux project-code SKUBER
-```
+**인증**: `wondermove-cd` 계정의 SSH 키가 필요합니다.
 
 ---
 
-### 방법 2: 수동 설치
+### Step 2: 프로젝트에 설치
 
-#### Step 1: 레포지토리 클론
-
-```bash
-git clone https://github.com/wondermove-cd/cd-claude-plugin.git
-```
-
-#### Step 2: 프로젝트에 복사
+#### 방법 A: 자동 설치 스크립트 (권장)
 
 ```bash
+# 프로젝트 폴더로 이동
 cd /path/to/your-project
 
-# .claude 폴더 복사
-cp -r /path/to/cd-claude-plugin/.claude .
-
-# CLAUDE.md 복사
-cp /path/to/cd-claude-plugin/CLAUDE.md .
+# 설치 스크립트 실행
+bash ~/repos/cd-claude-plugin/install.sh
 ```
 
-#### Step 3: 디렉토리 구조 생성
+**설치 과정**:
+- 기존 `.claude` 폴더 자동 백업
+- 플러그인 파일 복사
+- 필요한 디렉토리 구조 생성
+- `.gitignore` 자동 생성
+
+---
+
+#### 방법 B: 수동 설치
 
 ```bash
-mkdir -p .ux-docs
-mkdir -p .claude-state
-mkdir -p docs
-```
+# 프로젝트 폴더로 이동
+cd /path/to/your-project
 
-#### Step 4: .gitignore 설정
+# 플러그인 파일 복사
+cp -r ~/repos/cd-claude-plugin/.claude .
+cp ~/repos/cd-claude-plugin/CLAUDE.md .
 
-`.gitignore`에 다음 추가:
+# 디렉토리 구조 생성
+mkdir -p .ux-docs .claude-state docs
 
-```
+# .gitignore 수동 추가 (파일이 없는 경우)
+cat >> .gitignore << 'EOF'
+
 # Claude Code state
 .claude-state/
 .ux-docs/
@@ -80,6 +65,7 @@ docs/
 
 # macOS
 .DS_Store
+EOF
 ```
 
 ---
@@ -212,10 +198,14 @@ sudo apt-get update
 sudo apt-get install git
 ```
 
-#### 다운로드 실패
+#### 클론 실패 (Permission denied)
 
-네트워크 문제이거나 레포지토리가 비공개일 수 있습니다.
-수동 설치를 시도하세요.
+SSH 키가 등록되지 않았습니다:
+
+1. SSH 키 생성: `ssh-keygen -t ed25519 -C "your-email@company.com"`
+2. 공개키 복사: `cat ~/.ssh/id_ed25519.pub`
+3. GitHub에 등록: https://github.com/settings/keys
+4. 재시도
 
 ### 명령어 작동 안 함
 
@@ -237,9 +227,9 @@ rm -rf .claude CLAUDE.md
 cat CLAUDE.md
 ```
 
-파일이 비어있거나 없으면:
+파일이 비어있거나 없으면 재설치:
 ```bash
-curl -o CLAUDE.md https://raw.githubusercontent.com/wondermove-cd/cd-claude-plugin/main/CLAUDE.md
+cp ~/repos/cd-claude-plugin/CLAUDE.md .
 ```
 
 ### 기존 설정과 충돌
@@ -251,7 +241,7 @@ curl -o CLAUDE.md https://raw.githubusercontent.com/wondermove-cd/cd-claude-plug
 mv .claude .claude.backup.$(date +%Y%m%d_%H%M%S)
 
 # 재설치
-curl -fsSL https://raw.githubusercontent.com/wondermove-cd/cd-claude-plugin/main/install.sh | bash
+bash ~/repos/cd-claude-plugin/install.sh
 ```
 
 ---
@@ -261,19 +251,24 @@ curl -fsSL https://raw.githubusercontent.com/wondermove-cd/cd-claude-plugin/main
 ### 최신 버전으로 업데이트
 
 ```bash
-# 현재 설정 백업
-cp -r .claude .claude.backup
-cp CLAUDE.md CLAUDE.md.backup
+# 1. 플러그인 레포지토리 업데이트
+cd ~/repos/cd-claude-plugin
+git pull origin main
 
-# 재설치 (최신 버전 다운로드)
-curl -fsSL https://raw.githubusercontent.com/wondermove-cd/cd-claude-plugin/main/install.sh | bash
+# 2. 프로젝트에서 백업 및 재설치
+cd /path/to/your-project
+cp -r .claude .claude.backup.$(date +%Y%m%d_%H%M%S)
+cp CLAUDE.md CLAUDE.md.backup.$(date +%Y%m%d_%H%M%S)
+
+# 3. 재설치
+bash ~/repos/cd-claude-plugin/install.sh
 ```
 
 ### 변경사항 확인
 
 ```bash
 # 백업과 비교
-diff -r .claude .claude.backup
+diff -r .claude .claude.backup.*
 ```
 
 ---

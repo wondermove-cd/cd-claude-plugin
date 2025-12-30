@@ -66,28 +66,22 @@ backup_existing() {
     fi
 }
 
-# Download and install
+# Install plugin from local source
 install_plugin() {
-    print_info "플러그인을 다운로드합니다..."
+    print_info "플러그인 파일을 복사합니다..."
 
-    # Create temporary directory
-    temp_dir=$(mktemp -d)
-
-    # Clone repository
-    git clone --depth 1 https://github.com/wondermove-cd/cd-claude-plugin.git "$temp_dir" 2>/dev/null || {
-        print_error "다운로드에 실패했습니다."
-        print_error "레포지토리 URL을 확인해주세요: https://github.com/wondermove-cd/cd-claude-plugin"
-        rm -rf "$temp_dir"
-        exit 1
-    }
+    # Get script directory
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
     # Copy files
-    print_info "파일을 복사합니다..."
-    cp -r "$temp_dir/.claude" .
-    cp "$temp_dir/CLAUDE.md" .
+    if [ ! -d "$script_dir/.claude" ]; then
+        print_error ".claude 폴더를 찾을 수 없습니다."
+        print_error "스크립트 위치: $script_dir"
+        exit 1
+    fi
 
-    # Cleanup
-    rm -rf "$temp_dir"
+    cp -r "$script_dir/.claude" .
+    cp "$script_dir/CLAUDE.md" .
 
     print_success "플러그인 파일 복사 완료"
 }
