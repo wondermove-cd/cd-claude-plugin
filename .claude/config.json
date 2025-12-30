@@ -1,0 +1,45 @@
+{
+  "hooks": {
+    "post-push": {
+      "enabled": true,
+      "auto_update_confluence": true,
+      "confluence_page_id": "1061912621",
+      "confluence_space": "CG1",
+      "ask_confirmation": true,
+      "skip_if_no_doc_changes": true,
+      "watch_files": [
+        "README.md",
+        "CONFLUENCE.md",
+        "INSTALL.md",
+        ".claude/commands/**/*.md",
+        ".claude/skills/**/*.md",
+        ".claude/templates/**/*.md"
+      ],
+      "ignore_files": [
+        ".claude-state/**",
+        "**/*.json",
+        ".git/**"
+      ]
+    }
+  },
+  "confluence": {
+    "auto_add_changelog": true,
+    "changelog_position": "bottom",
+    "max_changelog_entries": 10,
+    "include_github_link": true
+  },
+  "skills": {
+    "context-manager": {
+      "enabled": true,
+      "auto_suggest_save": true,
+      "auto_suggest_restore": true,
+      "save_triggers": [
+        "jira-push",
+        "git-push",
+        "worktree-update"
+      ],
+      "min_files_for_suggestion": 3,
+      "cooldown_minutes": 30
+    }
+  }
+}
