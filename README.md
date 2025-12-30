@@ -38,6 +38,14 @@
 | `/context-restore --history` | 저장된 세션 히스토리 조회 |
 | `/context-restore --preview` | 컨텍스트 미리보기 (복원하지 않음) |
 
+### 1-2. 플러그인 관리 ⭐
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/plugin-update` | GitHub에서 최신 플러그인 pull 후 현재 프로젝트에 적용 |
+| `/plugin-update --force` | 확인 없이 바로 업데이트 |
+| `/plugin-update --dry-run` | 변경사항만 확인 (실제 업데이트 안 함) |
+
 ### 2. 기획 워크플로우
 
 ```mermaid
