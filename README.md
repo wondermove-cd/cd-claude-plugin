@@ -34,7 +34,7 @@
 ```mermaid
 flowchart LR
     A["/ux plan"] --> B["/ux flow"]
-    B --> C["/ux spec"]
+    B --> C["/ux design"]
     C --> D["/ux tasks"]
 ```
 
@@ -42,7 +42,7 @@ flowchart LR
 |--------|------|
 | `/ux plan` | PRD/기획서 자동 생성 |
 | `/ux flow` | 사용자 플로우 다이어그램 생성 |
-| `/ux spec` | 상세 화면 기획서 작성 |
+| `/ux design` | **화면 시안 제안** (기존 디자인 시스템 분석 + 레이아웃 + 엣지 케이스) |
 | `/ux tasks` | 태스크 분해 및 Worktree 생성 |
 | `/ux handoff` | 개발팀 전달용 스펙 문서 생성 |
 
@@ -123,14 +123,18 @@ bash ~/repos/cd-claude-plugin/install.sh
 ### 시나리오 1: 신규 기능 기획
 
 ```bash
-# 1. 기획
+# 1. PRD 작성
 /ux plan "실시간 알림 기능"
 
 # 2. 플로우 설계
 /ux flow
 
-# 3. 화면 기획서 작성
-/ux spec
+# 3. 화면 시안 제안 (핵심!)
+/ux design
+# → 기존 디자인 시스템 분석
+# → 화면 레이아웃 제안
+# → 엣지 케이스/에러 상태 화면 제안
+# → 컴포넌트 조합 제안
 
 # 4. 태스크 분해
 /ux tasks
@@ -169,10 +173,11 @@ project/
 ├── README.md                    # 이 문서
 │
 ├── .claude/
-│   ├── commands/                # 슬래시 커맨드 (10+개)
+│   ├── commands/                # 슬래시 커맨드 (10개)
 │   │   ├── ux-init.md
 │   │   ├── ux-onboard.md
 │   │   ├── ux-plan.md
+│   │   ├── ux-design.md         # 화면 시안 제안 (신규!)
 │   │   ├── ux-manual-init.md
 │   │   └── ...
 │   │
@@ -212,8 +217,13 @@ project/
 │   └── jira_mapping.json        # JIRA ID 매핑
 │
 └── docs/                        # 생성된 기획 문서
-    ├── prd/
-    └── handoff/
+    ├── prd/                     # PRD 문서
+    ├── design/                  # 화면 설계 (신규!)
+    │   └── [기능명]/
+    │       ├── screens.md       # 화면 시안
+    │       ├── components.md    # 컴포넌트 스펙
+    │       └── interactions.md  # 인터랙션 정의
+    └── handoff/                 # 개발 전달 문서
 ```
 
 ---

@@ -50,7 +50,7 @@
 ```mermaid
 flowchart LR
     A["/ux plan"] --> B["/ux flow"]
-    B --> C["/ux spec"]
+    B --> C["/ux design"]
     C --> D["/ux tasks"]
 ```
 
@@ -58,7 +58,7 @@ flowchart LR
 |--------|------|
 | `/ux plan [기능명]` | PRD/기획서 초안 생성 |
 | `/ux flow [기능명]` | 사용자 플로우 다이어그램 생성 |
-| `/ux spec [기능명]` | 상세 화면 기획서 생성 |
+| `/ux design [기능명]` | 화면 시안 및 레이아웃 제안 (엣지 케이스 포함) |
 | `/ux tasks` | 기획서 기반 태스크 분해 |
 | `/ux handoff` | 개발팀 전달용 스펙 문서 생성 |
 
