@@ -67,18 +67,18 @@ sync_history_count = len(mapping.get('sync_history', []))
 ```python
 worktree = load_worktree()
 
-# Worktree 항목 수
+# Worktree 항목 수 (Epic > Task > Subtask 구조)
 worktree_epics = len(worktree['epics'])
-worktree_stories = sum(len(epic['stories']) for epic in worktree['epics'])
-worktree_tasks = sum(
-    len(story['tasks'])
+worktree_tasks = sum(len(epic['tasks']) for epic in worktree['epics'])
+worktree_subtasks = sum(
+    len(task['subtasks'])
     for epic in worktree['epics']
-    for story in epic['stories']
+    for task in epic['tasks']
 )
 
 # JIRA 동기화된 항목 수
 synced_count = total_mappings
-not_synced_count = (worktree_epics + worktree_stories + worktree_tasks) - synced_count
+not_synced_count = (worktree_epics + worktree_tasks + worktree_subtasks) - synced_count
 ```
 
 ---
@@ -104,14 +104,14 @@ not_synced_count = (worktree_epics + worktree_stories + worktree_tasks) - synced
 
 📦 Worktree 현황
  • Epic: 1개
- • Story: 2개
- • Task: 7개
+ • Task: 2개
+ • Subtask: 7개
  • 총: 10개
 
 ✅ JIRA 동기화 완료: 10개 (100%)
  • Epic: 1개 ✅
- • Story: 2개 ✅
- • Task: 7개 ✅
+ • Task: 2개 ✅
+ • Subtask: 7개 ✅
 
 ⏳ 동기화 대기: 0개
 
@@ -194,16 +194,16 @@ API 토큰이 만료되었거나 잘못되었습니다.
 
 📦 Worktree 현황
  • Epic: 1개
- • Story: 2개
- • Task: 7개
+ • Task: 2개
+ • Subtask: 7개
  • 총: 10개
 
 ⚠️ 동기화 필요: 3개
 
 동기화되지 않은 항목:
- • TASK-008: 회원가입 이메일 발송
- • TASK-009: 비밀번호 암호화 강화
- • TASK-010: 로그 추가
+ • SUBTASK-008: 회원가입 이메일 발송
+ • SUBTASK-009: 비밀번호 암호화 강화
+ • SUBTASK-010: 로그 추가
 
 💡 동기화 실행: /jira-push
 
@@ -219,13 +219,13 @@ API 토큰이 만료되었거나 잘못되었습니다.
 ```
 매핑 상세:
 
-Worktree ID     | JIRA Key | 타입  | 상태        | 동기화 시간
-----------------|----------|-------|-------------|------------------
-EPIC-001        | CD-100   | Epic  | To Do       | 2025-12-30 14:20
-STORY-001       | CD-101   | Story | In Progress | 2025-12-30 14:22
-TASK-001        | CD-102   | Task  | Done        | 2025-12-30 14:25
-TASK-002        | CD-103   | Task  | Done        | 2025-12-30 14:27
-TASK-003        | CD-104   | Task  | In Progress | 2025-12-30 14:28
+Worktree ID     | JIRA Key | 타입     | 상태        | 동기화 시간
+----------------|----------|----------|-------------|------------------
+EPIC-001        | CD-100   | Epic     | To Do       | 2025-12-30 14:20
+TASK-001        | CD-101   | Task     | In Progress | 2025-12-30 14:22
+SUBTASK-001     | CD-102   | Subtask  | Done        | 2025-12-30 14:25
+SUBTASK-002     | CD-103   | Subtask  | Done        | 2025-12-30 14:27
+SUBTASK-003     | CD-104   | Subtask  | In Progress | 2025-12-30 14:28
 ...
 ```
 

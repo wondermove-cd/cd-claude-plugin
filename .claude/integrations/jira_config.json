@@ -1,0 +1,39 @@
+{
+  "jira": {
+    "host": "https://wondermove-official.atlassian.net",
+    "project_key": "CD",
+    "project_code": "PLUGIN",
+    "issue_types": {
+      "epic": "Epic",
+      "story": "Story",
+      "task": "Task",
+      "bug": "Bug"
+    },
+    "transitions": {
+      "todo": "To Do",
+      "in_progress": "In Progress",
+      "done": "Done",
+      "blocked": "Blocked"
+    },
+    "custom_fields": {
+      "story_points": "customfield_10016",
+      "epic_link": "customfield_10014"
+    },
+    "labels": {
+      "auto_add_project_code": true,
+      "prefix_in_summary": true
+    }
+  },
+  "worktree": {
+    "default_priority": "P1",
+    "auto_sync": false,
+    "sync_on_task_complete": false
+  },
+  "notifications": {
+    "on_sync_success": true,
+    "on_sync_failure": true
+  },
+  "created_at": "2025-12-30T16:00:00Z",
+  "last_tested": "2025-12-30T16:00:00Z",
+  "version": "1.0.0"
+}

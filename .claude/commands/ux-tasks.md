@@ -11,7 +11,7 @@ PRD와 화면 설계를 기반으로 개발 태스크를 분해하고 Worktree�
 ## 목적
 
 - 기획 문서를 실행 가능한 개발 태스크로 분해
-- Epic → Story → Task 계층 구조 생성
+- Epic → Task → Subtask 계층 구조 생성 (Story 레벨 제외)
 - 우선순위 및 의존성 정의
 - JIRA 동기화 준비
 
@@ -73,35 +73,41 @@ docs/prd/{기능명}/prd.md             # PRD
 
 ---
 
-### Step 3: Story 분해
+### Step 3: Task 분해
 
-Epic을 사용자 중심의 Story로 분해:
+Epic을 실제 개발 작업 단위인 Task로 분해:
 
-#### Story 작성 규칙
+#### Task 작성 규칙
 
-```
-As a {사용자 타입},
-I want to {원하는 기능},
-So that {얻고자 하는 가치}.
-```
+각 Task는 독립적으로 완료 가능한 작업 단위로 정의:
+- 명확한 완료 조건
+- 2-8시간 내 완료 가능한 크기
+- 담당자 할당 가능한 단위
 
-#### Story 예시
+#### Task 예시
 
 ```markdown
-### STORY-001: 사용자 회원가입
+### TASK-001: 사용자 회원가입 기능
 
-**User Story**:
-As a 신규 사용자,
-I want to 이메일로 회원가입하고,
-So that 서비스를 이용할 수 있다.
+**문제점/해결해야 할 이슈**:
+신규 사용자가 서비스를 이용하기 위한 회원가입 시스템이 필요합니다.
 
-**Acceptance Criteria** (완료 조건):
-- [ ] 이메일, 비밀번호, 이름 입력 폼 표시
-- [ ] 이메일 형식 검증 (@ 포함)
-- [ ] 비밀번호 강도 검증 (8자 이상, 영문+숫자)
-- [ ] 중복 이메일 확인
-- [ ] 가입 완료 시 확인 이메일 발송
-- [ ] 에러 메시지 명확하게 표시
+**요구사항**:
+- 이메일, 비밀번호, 이름 입력 폼 제공
+- 이메일 형식 검증 (@ 포함)
+- 비밀번호 강도 검증 (8자 이상, 영문+숫자)
+- 중복 이메일 확인
+- 가입 완료 시 확인 이메일 발송
+- 에러 메시지 명확하게 표시
+
+**작업 Step**:
+1. User 엔티티 설계 및 DB 스키마 생성
+2. 회원가입 API 엔드포인트 구현
+3. 회원가입 폼 UI 컴포넌트 구현
+4. API 연동 및 에러 핸들링
+5. 유효성 검사 및 테스트
+
+**결과**: (작업 완료 후 업데이트)
 
 **화면**:
 - SC-001: 회원가입 폼
@@ -109,83 +115,102 @@ So that 서비스를 이용할 수 있다.
 - SC-003: 에러 상태
 
 **우선순위**: P0
-
 **예상 기간**: 3일
+**Due Date**: 2026-01-02
 ```
 
 ---
 
-### Step 4: Task 분해
+### Step 4: Subtask 분해
 
-Story를 실제 개발 작업으로 분해:
+Task를 더 세부적인 Subtask로 분해:
 
-#### Task 분류
+#### Subtask 분류
 
-1. **Frontend Tasks**
+1. **Frontend Subtasks**
    - UI 컴포넌트
    - 페이지/라우팅
    - 상태 관리
    - API 연동
 
-2. **Backend Tasks**
+2. **Backend Subtasks**
    - API 엔드포인트
    - 데이터베이스
    - 비즈니스 로직
    - 검증/보안
 
-3. **Design Tasks**
+3. **Design Subtasks**
    - 화면 디자인
    - 컴포넌트 디자인
    - 프로토타입
 
-4. **QA Tasks**
+4. **QA Subtasks**
    - 테스트 케이스 작성
    - 테스트 실행
    - 버그 수정
 
-#### Task 예시
+#### Subtask 예시
 
 ```markdown
-### TASK-001: User 엔티티 설계
+### SUBTASK-001: User 엔티티 설계
 
 **타입**: Backend
-**Story**: STORY-001
+**상위 Task**: TASK-001
 
-**설명**:
-데이터베이스에 User 테이블 생성
+**문제점/해결해야 할 이슈**:
+회원가입 기능을 위한 User 데이터 모델이 필요합니다.
 
-**상세 작업**:
-- [ ] User 엔티티 클래스 정의 (id, email, password, name, created_at)
-- [ ] 이메일 unique 제약조건 추가
-- [ ] 비밀번호 해싱 로직 구현
-- [ ] Migration 파일 생성
+**요구사항**:
+- User 엔티티 클래스 정의 (id, email, password, name, created_at)
+- 이메일 unique 제약조건 추가
+- 비밀번호 해싱 로직 구현
+- Migration 파일 생성
+
+**작업 Step**:
+1. User 엔티티 클래스 생성
+2. 필드 정의 및 데코레이터 추가
+3. 이메일 unique 인덱스 설정
+4. 비밀번호 해싱 메서드 구현
+5. Migration 파일 생성 및 테스트
+
+**결과**: (작업 완료 후 업데이트)
 
 **기술 스택**: PostgreSQL, TypeORM
 
 **예상 시간**: 2시간
-
 **우선순위**: P0
-
 **의존성**: 없음
 
 ---
 
-### TASK-002: 회원가입 API 구현
+### SUBTASK-002: 회원가입 API 구현
 
 **타입**: Backend
-**Story**: STORY-001
+**상위 Task**: TASK-001
 
-**설명**:
-POST /api/auth/signup 엔드포인트 구현
+**문제점/해결해야 할 이슈**:
+클라이언트에서 회원가입 요청을 처리할 API가 필요합니다.
 
-**상세 작업**:
-- [ ] DTO 정의 (SignupDto)
-- [ ] 입력 검증 (class-validator)
-- [ ] 중복 이메일 체크
-- [ ] 비밀번호 해싱
-- [ ] User 생성 및 저장
-- [ ] JWT 토큰 발급
-- [ ] 에러 핸들링 (400, 409, 500)
+**요구사항**:
+- POST /api/auth/signup 엔드포인트 구현
+- DTO 정의 (SignupDto)
+- 입력 검증 (class-validator)
+- 중복 이메일 체크
+- 비밀번호 해싱
+- User 생성 및 저장
+- JWT 토큰 발급
+- 에러 핸들링 (400, 409, 500)
+
+**작업 Step**:
+1. SignupDto 클래스 생성
+2. Controller에 signup 엔드포인트 추가
+3. Service에 회원가입 로직 구현
+4. 중복 이메일 체크 로직
+5. JWT 토큰 발급 로직
+6. 에러 핸들러 구현
+7. 단위 테스트 작성
+
+**결과**: (작업 완료 후 업데이트)
 
 **API 스펙**:
 ```json
@@ -204,28 +229,36 @@ Response 201:
 ```
 
 **예상 시간**: 4시간
-
 **우선순위**: P0
-
-**의존성**: TASK-001 완료 후
+**의존성**: SUBTASK-001 완료 후
 
 ---
 
-### TASK-003: 회원가입 폼 UI 구현
+### SUBTASK-003: 회원가입 폼 UI 구현
 
 **타입**: Frontend
-**Story**: STORY-001
+**상위 Task**: TASK-001
 
-**설명**:
-회원가입 화면 UI 컴포넌트 구현
+**문제점/해결해야 할 이슈**:
+사용자가 회원가입 정보를 입력할 수 있는 폼 화면이 필요합니다.
 
-**상세 작업**:
-- [ ] SignupForm 컴포넌트 생성
-- [ ] Input 필드 (이메일, 비밀번호, 이름)
-- [ ] 실시간 유효성 검사
-- [ ] 에러 메시지 표시
-- [ ] 제출 버튼 (로딩 상태 포함)
-- [ ] 로그인 페이지 링크
+**요구사항**:
+- SignupForm 컴포넌트 생성
+- Input 필드 (이메일, 비밀번호, 이름)
+- 실시간 유효성 검사
+- 에러 메시지 표시
+- 제출 버튼 (로딩 상태 포함)
+- 로그인 페이지 링크
+
+**작업 Step**:
+1. SignupForm 컴포넌트 생성
+2. 폼 필드 레이아웃 구성
+3. 입력 유효성 검사 로직
+4. 에러 상태 UI 구현
+5. 제출 버튼 및 로딩 상태
+6. 스타일링 및 반응형 처리
+
+**결과**: (작업 완료 후 업데이트)
 
 **사용 컴포넌트**:
 - Input (디자인 시스템)
@@ -233,9 +266,7 @@ Response 201:
 - ErrorMessage (신규)
 
 **예상 시간**: 3시간
-
 **우선순위**: P0
-
 **의존성**: 디자인 시스템 Input/Button 컴포넌트
 ```
 
@@ -243,7 +274,7 @@ Response 201:
 
 ### Step 5: Worktree 구조 생성
 
-#### Worktree JSON 구조
+#### Worktree JSON 구조 (Epic > Task > Subtask)
 
 ```json
 {
@@ -255,30 +286,67 @@ Response 201:
       "id": "EPIC-001",
       "title": "사용자 인증 시스템",
       "description": "회원가입, 로그인, 비밀번호 찾기 기능",
+      "problem": "사용자가 서비스를 이용하기 위한 인증 시스템이 필요합니다.",
+      "requirements": [
+        "안전한 비밀번호 저장",
+        "JWT 기반 인증",
+        "이메일 중복 방지",
+        "비밀번호 찾기 기능"
+      ],
+      "steps": [
+        "User 엔티티 및 인증 구조 설계",
+        "회원가입/로그인 API 구현",
+        "프론트엔드 폼 구현",
+        "테스트 및 보안 검증"
+      ],
+      "result": "작업 완료 후 업데이트 예정",
       "status": "todo",
       "priority": "P0",
       "estimated_duration": "2주",
-      "stories": [
+      "tasks": [
         {
-          "id": "STORY-001",
-          "title": "사용자 회원가입",
-          "user_story": "As a 신규 사용자, I want to 이메일로 회원가입하고, So that 서비스를 이용할 수 있다.",
-          "acceptance_criteria": [
-            "이메일, 비밀번호, 이름 입력 폼 표시",
+          "id": "TASK-001",
+          "title": "사용자 회원가입 기능",
+          "problem": "신규 사용자가 서비스를 이용하기 위한 회원가입 시스템이 필요합니다.",
+          "requirements": [
+            "이메일, 비밀번호, 이름 입력 폼 제공",
             "이메일 형식 검증",
             "비밀번호 강도 검증",
             "중복 이메일 확인",
             "가입 완료 시 확인 이메일 발송"
           ],
+          "steps": [
+            "User 엔티티 설계 및 DB 스키마 생성",
+            "회원가입 API 엔드포인트 구현",
+            "회원가입 폼 UI 컴포넌트 구현",
+            "API 연동 및 에러 핸들링",
+            "유효성 검사 및 테스트"
+          ],
+          "result": "작업 완료 후 업데이트 예정",
           "status": "todo",
           "priority": "P0",
           "estimated_duration": "3일",
-          "tasks": [
+          "duedate": "2026-01-02",
+          "subtasks": [
             {
-              "id": "TASK-001",
+              "id": "SUBTASK-001",
               "title": "User 엔티티 설계",
               "type": "backend",
-              "description": "데이터베이스에 User 테이블 생성",
+              "problem": "회원가입 기능을 위한 User 데이터 모델이 필요합니다.",
+              "requirements": [
+                "User 엔티티 클래스 정의",
+                "이메일 unique 제약조건",
+                "비밀번호 해싱 로직",
+                "Migration 파일 생성"
+              ],
+              "steps": [
+                "User 엔티티 클래스 생성",
+                "필드 정의 및 데코레이터 추가",
+                "이메일 unique 인덱스 설정",
+                "비밀번호 해싱 메서드 구현",
+                "Migration 파일 생성 및 테스트"
+              ],
+              "result": "작업 완료 후 업데이트 예정",
               "status": "todo",
               "priority": "P0",
               "estimated_hours": 2,
@@ -287,22 +355,55 @@ Response 201:
               "tags": ["database", "entity"]
             },
             {
-              "id": "TASK-002",
+              "id": "SUBTASK-002",
               "title": "회원가입 API 구현",
               "type": "backend",
-              "description": "POST /api/auth/signup 엔드포인트 구현",
+              "problem": "클라이언트에서 회원가입 요청을 처리할 API가 필요합니다.",
+              "requirements": [
+                "POST /api/auth/signup 엔드포인트",
+                "입력 검증",
+                "중복 이메일 체크",
+                "JWT 토큰 발급",
+                "에러 핸들링"
+              ],
+              "steps": [
+                "SignupDto 클래스 생성",
+                "Controller에 signup 엔드포인트 추가",
+                "Service에 회원가입 로직 구현",
+                "중복 이메일 체크 로직",
+                "JWT 토큰 발급 로직",
+                "에러 핸들러 구현",
+                "단위 테스트 작성"
+              ],
+              "result": "작업 완료 후 업데이트 예정",
               "status": "todo",
               "priority": "P0",
               "estimated_hours": 4,
-              "dependencies": ["TASK-001"],
+              "dependencies": ["SUBTASK-001"],
               "assignee": null,
               "tags": ["api", "auth"]
             },
             {
-              "id": "TASK-003",
+              "id": "SUBTASK-003",
               "title": "회원가입 폼 UI 구현",
               "type": "frontend",
-              "description": "회원가입 화면 UI 컴포넌트 구현",
+              "problem": "사용자가 회원가입 정보를 입력할 수 있는 폼 화면이 필요합니다.",
+              "requirements": [
+                "SignupForm 컴포넌트",
+                "입력 필드 (이메일, 비밀번호, 이름)",
+                "실시간 유효성 검사",
+                "에러 메시지 표시",
+                "제출 버튼 및 로딩 상태"
+              ],
+              "steps": [
+                "SignupForm 컴포넌트 생성",
+                "폼 필드 레이아웃 구성",
+                "입력 유효성 검사 로직",
+                "에러 상태 UI 구현",
+                "제출 버튼 및 로딩 상태",
+                "스타일링 및 반응형 처리"
+              ],
+              "result": "작업 완료 후 업데이트 예정",
               "status": "todo",
               "priority": "P0",
               "estimated_hours": 3,
@@ -317,8 +418,8 @@ Response 201:
   ],
   "summary": {
     "total_epics": 1,
-    "total_stories": 1,
-    "total_tasks": 3,
+    "total_tasks": 1,
+    "total_subtasks": 3,
     "estimated_total_hours": 9,
     "by_type": {
       "backend": 2,
@@ -351,16 +452,16 @@ Response 201:
 
 ### EPIC-001: 사용자 인증 시스템
 
-#### STORY-001: 사용자 회원가입
-- TASK-001: User 엔티티 설계 (Backend, 2h)
-- TASK-002: 회원가입 API 구현 (Backend, 4h) ← TASK-001
-- TASK-003: 회원가입 폼 UI 구현 (Frontend, 3h)
-- TASK-004: API 연동 (Frontend, 2h) ← TASK-002, TASK-003
-- TASK-005: 유효성 검사 (Frontend, 2h)
-- TASK-006: 단위 테스트 (Backend, 3h) ← TASK-002
-- TASK-007: E2E 테스트 (QA, 2h) ← TASK-004
+#### TASK-001: 사용자 회원가입 기능 (3일, Due: 2026-01-02)
+- SUBTASK-001: User 엔티티 설계 (Backend, 2h)
+- SUBTASK-002: 회원가입 API 구현 (Backend, 4h) ← SUBTASK-001
+- SUBTASK-003: 회원가입 폼 UI 구현 (Frontend, 3h)
+- SUBTASK-004: API 연동 (Frontend, 2h) ← SUBTASK-002, SUBTASK-003
+- SUBTASK-005: 유효성 검사 (Frontend, 2h)
+- SUBTASK-006: 단위 테스트 (Backend, 3h) ← SUBTASK-002
+- SUBTASK-007: E2E 테스트 (QA, 2h) ← SUBTASK-004
 
-#### STORY-002: 사용자 로그인
+#### TASK-002: 사용자 로그인 기능 (2일, Due: 2026-01-02)
 ...
 
 ---
@@ -368,9 +469,9 @@ Response 201:
 ## 우선순위별 태스크
 
 ### P0 (필수) - 7개
-1. TASK-001: User 엔티티 설계
-2. TASK-002: 회원가입 API 구현
-3. TASK-003: 회원가입 폼 UI 구현
+1. SUBTASK-001: User 엔티티 설계
+2. SUBTASK-002: 회원가입 API 구현
+3. SUBTASK-003: 회원가입 폼 UI 구현
 ...
 
 ### P1 (중요) - 3개
@@ -382,10 +483,10 @@ Response 201:
 
 ```mermaid
 graph TD
-    A[TASK-001: User 엔티티] --> B[TASK-002: 회원가입 API]
-    C[TASK-003: 회원가입 UI] --> D[TASK-004: API 연동]
+    A[SUBTASK-001: User 엔티티] --> B[SUBTASK-002: 회원가입 API]
+    C[SUBTASK-003: 회원가입 UI] --> D[SUBTASK-004: API 연동]
     B --> D
-    D --> E[TASK-007: E2E 테스트]
+    D --> E[SUBTASK-007: E2E 테스트]
 ```
 
 ---
@@ -395,19 +496,20 @@ graph TD
 **총 예상 시간**: 18시간
 **인원**: 2명 (FE 1, BE 1)
 **예상 기간**: 3일
+**Due Date**: 2026-01-02
 
 ### Day 1
-- TASK-001: User 엔티티 설계
-- TASK-003: 회원가입 폼 UI 구현
+- SUBTASK-001: User 엔티티 설계
+- SUBTASK-003: 회원가입 폼 UI 구현
 
 ### Day 2
-- TASK-002: 회원가입 API 구현
-- TASK-005: 유효성 검사
+- SUBTASK-002: 회원가입 API 구현
+- SUBTASK-005: 유효성 검사
 
 ### Day 3
-- TASK-004: API 연동
-- TASK-006: 단위 테스트
-- TASK-007: E2E 테스트
+- SUBTASK-004: API 연동
+- SUBTASK-006: 단위 테스트
+- SUBTASK-007: E2E 테스트
 ```
 
 **저장 위치**: `docs/tasks/{기능명}/tasks.md`
@@ -426,8 +528,8 @@ graph TD
 ## 태스크 현황
 
 - **Epic**: 1개
-- **Story**: 2개
-- **Task**: 7개 (P0: 5개, P1: 2개)
+- **Task**: 2개
+- **Subtask**: 7개 (P0: 5개, P1: 2개)
 - **예상 기간**: 3일
 ```
 
@@ -444,8 +546,8 @@ graph TD
 
  생성된 구조:
  ✅ Epic: 1개
- ✅ Story: 2개
- ✅ Task: 7개
+ ✅ Task: 2개
+ ✅ Subtask: 7개
 
  우선순위별:
  • P0 (필수): 5개
@@ -477,25 +579,40 @@ graph TD
 
 ## 태스크 분해 원칙
 
-### 1. 적절한 크기
+### 1. 계층 구조
 
-- Task는 **2-8시간** 내에 완료 가능한 크기
+- **Epic**: 대규모 기능 단위 (예: 사용자 인증 시스템)
+- **Task**: Epic의 하위 기능 단위 (예: 회원가입 기능, 로그인 기능)
+- **Subtask**: Task의 실제 구현 작업 (예: User 엔티티 설계, API 구현)
+
+### 2. 적절한 크기
+
+- **Task**: 2-5일 내에 완료 가능한 크기
+- **Subtask**: 2-8시간 내에 완료 가능한 크기
 - 8시간 초과 시 더 작게 분해
 - 2시간 미만은 너무 작음 (병합 고려)
 
-### 2. 명확한 완료 조건
+### 3. 명확한 완료 조건
 
-각 Task는 **완료 조건**이 명확해야 함:
+각 Subtask는 **완료 조건**이 명확해야 함:
 - ✅ "User 엔티티 클래스 생성 완료"
 - ❌ "데이터베이스 작업"
 
-### 3. 의존성 최소화
+### 4. 4가지 필수 섹션
+
+모든 Task와 Subtask는 다음 섹션을 포함:
+- **문제점/해결해야 할 이슈**: 왜 이 작업이 필요한가?
+- **요구사항**: 무엇을 만들어야 하는가?
+- **작업 Step**: 어떻게 진행할 것인가?
+- **결과**: 무엇이 완성되었는가? (작업 완료 후 업데이트)
+
+### 5. 의존성 최소화
 
 - 병렬 작업 가능하도록 의존성 최소화
 - 필수 의존성만 명시
 - 순환 의존성 금지
 
-### 4. 타입 분류
+### 6. 타입 분류
 
 - **Backend**: 서버, API, DB
 - **Frontend**: UI, 클라이언트 로직

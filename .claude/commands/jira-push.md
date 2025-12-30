@@ -98,10 +98,14 @@ connector = JiraConnector(config)
 
 ### Step 2: Worktree 분석
 
-Worktree 구조 파싱:
+Worktree 구조 파싱 (3단계 계층):
 - Epic 목록
-- Story 목록 (Epic 하위)
-- Task 목록 (Story 하위)
+- Task 목록 (Epic 하위)
+- Subtask 목록 (Task 하위)
+
+**구조 변경 사항**:
+- ~~Epic > Story > Task~~ (구 방식)
+- **Epic > Task > Subtask** (신 방식) ✅
 
 ---
 
@@ -131,32 +135,205 @@ def get_labels(project_code):
     return [project_code]
 ```
 
+#### 티켓 설명 생성 (상세 내용 필수!)
+
+```python
+def create_description(problem, requirements, solution, design_intent, screens, steps, result="작업 완료 후 업데이트 예정"):
+    """
+    JIRA 티켓 설명을 구조화하여 생성
+
+    필수 섹션:
+    1. 요구사항
+    2. 해결방안
+    3. 디자인 의도
+    4. 화면 구성
+    5. 작업 Step (ordered list)
+    6. 결과
+    """
+    content = []
+
+    # 요구사항
+    content.append({
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [{"type": "text", "text": "요구사항"}]
+    })
+    bullet_list = {"type": "bulletList", "content": []}
+    for req in requirements:
+        bullet_list["content"].append({
+            "type": "listItem",
+            "content": [{"type": "paragraph", "content": [{"type": "text", "text": req}]}]
+        })
+    content.append(bullet_list)
+
+    # 해결방안
+    content.append({
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [{"type": "text", "text": "해결방안"}]
+    })
+    content.append({
+        "type": "paragraph",
+        "content": [{"type": "text", "text": solution}]
+    })
+
+    # 디자인 의도
+    if design_intent:
+        content.append({
+            "type": "heading",
+            "attrs": {"level": 2},
+            "content": [{"type": "text", "text": "디자인 의도"}]
+        })
+        content.append({
+            "type": "paragraph",
+            "content": [{"type": "text", "text": design_intent}]
+        })
+
+    # 화면 구성
+    if screens:
+        content.append({
+            "type": "heading",
+            "attrs": {"level": 2},
+            "content": [{"type": "text", "text": "화면 구성"}]
+        })
+
+        # 화면 구성 섹션 시작
+        content.append({
+            "type": "expand",
+            "attrs": {"title": "화면 구성 상세"},
+            "content": []
+        })
+
+        # 화면 구성 내용
+        screen_content = []
+        for screen in screens:
+            screen_content.append({
+                "type": "paragraph",
+                "content": [{"type": "text", "text": screen}]
+            })
+
+        # 화면 구성 업데이트 이력 (처음에는 비어있음)
+        content.append({
+            "type": "panel",
+            "attrs": {"panelType": "info"},
+            "content": [{
+                "type": "paragraph",
+                "content": [{
+                    "type": "text",
+                    "text": "📝 화면 구성 업데이트 이력",
+                    "marks": [{"type": "strong"}]
+                }]
+            }]
+        })
+
+        # 업데이트 이력 테이블 헤더
+        content.append({
+            "type": "table",
+            "content": [
+                {
+                    "type": "tableRow",
+                    "content": [
+                        {"type": "tableHeader", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "날짜"}]}]},
+                        {"type": "tableHeader", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "작성자"}]}]},
+                        {"type": "tableHeader", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "변경 내용"}]}]}
+                    ]
+                },
+                {
+                    "type": "tableRow",
+                    "content": [
+                        {"type": "tableCell", "content": [{"type": "paragraph", "content": [{"type": "text", "text": datetime.now().strftime('%Y-%m-%d')}]}]},
+                        {"type": "tableCell", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "System"}]}]},
+                        {"type": "tableCell", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "최초 생성"}]}]}
+                    ]
+                }
+            ]
+        })
+
+        # 실제 화면 구성 내용
+        for screen in screens:
+            content.append({
+                "type": "paragraph",
+                "content": [{"type": "text", "text": screen}]
+            })
+
+    # 작업 Step (ordered list)
+    content.append({
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [{"type": "text", "text": "Step"}]
+    })
+    ordered_list = {"type": "orderedList", "content": []}
+    for step in steps:
+        ordered_list["content"].append({
+            "type": "listItem",
+            "content": [{"type": "paragraph", "content": [{"type": "text", "text": step}]}]
+        })
+    content.append(ordered_list)
+
+    # 결과
+    content.append({
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [{"type": "text", "text": "결과"}]
+    })
+    content.append({
+        "type": "paragraph",
+        "content": [{"type": "text", "text": result}]
+    })
+
+    return {"type": "doc", "version": 1, "content": content}
+```
+
 #### 새 항목: JIRA 이슈 생성
 
 ```python
 # Epic 생성
 epic_result = connector.create_issue(
-    issue_type='Epic',
-    summary=format_title(epic['title'], project_code),  # 프로젝트 코드 추가
-    description=epic.get('description', ''),
-    labels=get_labels(project_code)  # 태그 추가
+    issue_type='에픽',  # JIRA 한글 이름 사용
+    summary=format_title(epic['title'], project_code),
+    description=create_description(
+        problem=epic.get('problem', ''),
+        requirements=epic.get('requirements', []),
+        steps=epic.get('steps', []),
+        result=epic.get('result', '작업 완료 후 업데이트 예정')
+    ),
+    labels=get_labels(project_code)
 )
 
-# Story 생성 (parent로 Epic 연결)
-story_result = connector.create_issue(
-    issue_type='Story',
-    summary=format_title(story['title'], project_code),  # 프로젝트 코드 추가
-    parent_key=epic_result['key'],
-    labels=get_labels(project_code)  # 태그 추가
-)
-
-# Task 생성 (parent로 Story 연결)
+# Task 생성 (parent로 Epic 연결)
 task_result = connector.create_issue(
     issue_type='Task',
-    summary=format_title(task['title'], project_code),  # 프로젝트 코드 추가
-    parent_key=story_result['key'],
-    labels=get_labels(project_code)  # 태그 추가
+    summary=format_title(task['title'], project_code),
+    description=create_description(
+        problem=task.get('problem', ''),
+        requirements=task.get('requirements', []),
+        steps=task.get('steps', []),
+        result=task.get('result', '작업 완료 후 업데이트 예정')
+    ),
+    parent_key=epic_result['key'],
+    labels=get_labels(project_code),
+    duedate=task.get('duedate', '2026-01-02')  # Due Date 설정
 )
+
+# Subtask 생성 (parent로 Task 연결)
+subtask_result = connector.create_issue(
+    issue_type='하위 작업',  # JIRA 한글 이름 사용
+    summary=format_title(subtask['title'], project_code),
+    description=create_description(
+        problem=subtask.get('problem', ''),
+        requirements=subtask.get('requirements', []),
+        steps=subtask.get('steps', []),
+        result=subtask.get('result', '작업 완료 후 업데이트 예정')
+    ),
+    parent_key=task_result['key'],
+    labels=get_labels(project_code)
+)
+
+# 완료된 항목은 Done으로 전환
+if task['status'] == 'done':
+    connector.transition_issue(task_result['key'], 'Done')
+    # 완료일 설정 (오늘 날짜)
+    connector.set_resolution_date(task_result['key'], datetime.now().strftime('%Y-%m-%d'))
 ```
 
 **JIRA API 요청 예시**:

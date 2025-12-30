@@ -71,6 +71,7 @@ flowchart LR
 | `design-system` | 컴포넌트 관련 작업 시 | 디자인 시스템 규칙 자동 참조 |
 | `handoff-spec` | 핸드오프 문서 작성 시 | 개발 전달 포맷 자동 적용 |
 | `manual-template` | 매뉴얼 작성 시 | 매뉴얼 템플릿 자동 적용 |
+| `figma-link-tracker` | Figma 링크 언급 시 | JIRA 티켓에 Figma 디자인 자동 추가 |
 
 ---
 
@@ -338,6 +339,16 @@ source ~/.zshrc
 /ux project-code SKUBER
 ```
 
+### 명령어
+
+| 명령어 | 설명 |
+|--------|------|
+| `/jira-init` | JIRA 연결 초기화 |
+| `/jira-push` | Worktree → JIRA 동기화 |
+| `/jira-status` | 동기화 현황 확인 |
+| `/jira-figma-sync` | 댓글의 Figma 링크를 Description에 추가 |
+| `/jira-screen-update` | 화면 구성 업데이트 및 이력 관리 |
+
 ### 워크플로우
 
 ```bash
@@ -350,16 +361,42 @@ source ~/.zshrc
 # 3. 태스크 분해
 /ux tasks
 # → Worktree 생성 (.claude-state/worktree.json)
+# → Epic > Task > Subtask 구조
 
 # 4. JIRA 동기화
 /jira-push
-# → Epic, Story, Task를 JIRA에 자동 생성
+# → Epic, Task, Subtask를 JIRA에 자동 생성
 # → 제목: [SKUBER] 기능명
 # → 태그: SKUBER
+# → 4가지 필수 섹션 포함 (문제점, 요구사항, Step, 결과)
 
 # 5. 상태 확인
 /jira-status
+
+# 6. Figma 링크 동기화 (선택)
+# 티켓 댓글에 Figma 링크가 있으면 Description에 추가
+/jira-figma-sync CD-123
 ```
+
+### Figma 연동 (선택)
+
+JIRA 티켓 댓글에 Figma 링크를 추가하면, Frame별 디자인 정보가 자동으로 Description에 동기화됩니다.
+
+**사용 방법**:
+1. JIRA 티켓 댓글에 Figma 링크 추가
+2. `/jira-figma-sync CD-123` 실행
+3. Description에 자동으로 추가됨:
+   - 📄 Figma 파일명
+   - 🔗 링크
+   - Frame 목록 (API Token 있을 경우)
+   - 업데이트 날짜 및 작성자
+
+**Figma API Token** (선택):
+```bash
+# .zshrc 또는 .bashrc에 추가
+export FIGMA_ACCESS_TOKEN="figd_your_token"
+```
+> Token 없이도 기본 동작 가능 (링크 파싱 모드)
 
 ### 프로젝트 코드 활용
 
