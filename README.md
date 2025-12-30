@@ -314,32 +314,50 @@ marp output/{제품명}_Manual_Full.md -o output/{제품명}_Manual.pptx
 
 ### 설정
 
+**환경변수 설정** (개인별, `.zshrc` 또는 `.bashrc`에 추가):
+
 ```bash
-# 1. 환경변수 설정
-export JIRA_EMAIL='your-email@company.com'
-export JIRA_API_TOKEN='your-api-token'
+# JIRA 연동 설정
+export JIRA_HOST="https://wondermove-official.atlassian.net"
+export JIRA_EMAIL="your-email@wondermove.net"
+export JIRA_API_TOKEN="your-api-token"
 
-# 2. 프로젝트 코드 설정 (필수!)
-/ux project-code SKUBER
-
-# 3. JIRA 연동 초기화
-/jira-init YOUR_PROJECT_KEY
+# 적용
+source ~/.zshrc
 ```
 
-### 사용
+**API 토큰 생성**: https://id.atlassian.com/manage-profile/security/api-tokens
+
+**초기화**:
 
 ```bash
-# Worktree → JIRA 동기화
+# 1. JIRA 연동 초기화 (프로젝트 키: CD)
+/jira-init CD
+
+# 2. 프로젝트 코드 설정 (티켓 prefix용)
+/ux project-code SKUBER
+```
+
+### 워크플로우
+
+```bash
+# 1. 기획 작성
+/ux plan "신규 기능"
+
+# 2. 화면 설계
+/ux design
+
+# 3. 태스크 분해
+/ux tasks
+# → Worktree 생성 (.claude-state/worktree.json)
+
+# 4. JIRA 동기화
 /jira-push
+# → Epic, Story, Task를 JIRA에 자동 생성
+# → 제목: [SKUBER] 기능명
+# → 태그: SKUBER
 
-# JIRA 티켓 생성 예시:
-# - 제목: [SKUBER] 클러스터 모니터링 기능
-# - 태그: SKUBER
-
-# 양방향 동기화
-/jira-sync
-
-# 상태 확인
+# 5. 상태 확인
 /jira-status
 ```
 

@@ -75,9 +75,13 @@ flowchart LR
 
 | 명령어 | 설명 |
 |--------|------|
-| `/jira-push` | JIRA에 이슈 자동 생성 ([프로젝트코드] prefix + 태그 자동 추가) |
-| `/jira-sync` | 양방향 동기화 |
-| `/jira-status` | 연동 상태 확인 |
+| `/jira-init [프로젝트키]` | JIRA 연동 초기화 (환경변수 확인 + 연결 테스트) |
+| `/ux tasks` | PRD 기반 Worktree 생성 (Epic → Story → Task) |
+| `/jira-push` | Worktree → JIRA 동기화 ([프로젝트코드] prefix + 태그 추가) |
+| `/jira-status` | 연동 상태 및 동기화 현황 확인 |
+
+**환경변수 필수** (개인별 설정):
+- `JIRA_HOST`, `JIRA_EMAIL`, `JIRA_API_TOKEN`
 
 **참고**: JIRA 티켓 생성 전 `/ux project-code` 로 프로젝트 코드를 먼저 설정하세요.
 
