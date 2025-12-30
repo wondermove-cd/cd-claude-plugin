@@ -411,6 +411,10 @@ def create_figma_update_rows(figma_data_list):
     """
     화면 구성 테이블에 추가할 업데이트 행 생성
 
+    최종 포맷:
+    | 날짜 | 작성자 | 변경 내용 |
+    | 2025-12-30 | vision | 📄 KIA IDCX > C_0101<br>See More 버튼 추가 |
+
     figma_data: {
         'file_name': str,
         'frame_name': str,
@@ -431,29 +435,40 @@ def create_figma_update_rows(figma_data_list):
         # 작성자
         author = data['author']
 
-        # 변경 내용 조합
-        changes = []
+        # 변경 내용 구성
+        change_parts = []
 
-        # 1. Frame 정보
-        if data.get('frame_name'):
-            changes.append(f"📄 {data['frame_name']}")
+        # 1. 파일명 > Frame명 (한 줄로)
+        if data.get('file_name') and data.get('frame_name'):
+            change_parts.append({
+                "type": "text",
+                "text": f"📄 {data['file_name']} > {data['frame_name']}"
+            })
+        elif data.get('frame_name'):
+            change_parts.append({
+                "type": "text",
+                "text": f"📄 {data['frame_name']}"
+            })
 
-        # 2. JIRA 댓글의 변경사항 설명
+        # 2. JIRA 댓글의 변경사항 또는 Figma 댓글 (하나만 선택)
+        description_text = None
+
         if data.get('jira_comment_change'):
-            changes.append(data['jira_comment_change'])
+            # JIRA 댓글 우선 (전체 내용)
+            description_text = data['jira_comment_change']
+        elif data.get('figma_comments') and len(data['figma_comments']) > 0:
+            # Figma 댓글 (전체 내용, 길이 제한 없음)
+            description_text = data['figma_comments'][0].get('message', '')
 
-        # 3. Figma 댓글 요약
-        if data.get('figma_comments'):
-            for comment in data['figma_comments'][:2]:  # 최대 2개만
-                msg = comment.get('message', '')[:100]  # 최대 100자
-                changes.append(f"💬 {msg}")
-
-        # 4. Figma 링크
-        changes.append({
-            "type": "text",
-            "text": "🔗 Figma에서 보기",
-            "marks": [{"type": "link", "attrs": {"href": data['url']}}]
-        })
+        # 3. 변경사항 텍스트를 같은 paragraph에 추가
+        if description_text:
+            if change_parts:
+                # 줄바꿈 추가
+                change_parts.append({"type": "hardBreak"})
+            change_parts.append({
+                "type": "text",
+                "text": description_text
+            })
 
         # 테이블 행 생성
         row = {
@@ -475,7 +490,10 @@ def create_figma_update_rows(figma_data_list):
                 },
                 {
                     "type": "tableCell",
-                    "content": create_change_content(changes)
+                    "content": [{
+                        "type": "paragraph",
+                        "content": change_parts if change_parts else [{"type": "text", "text": "(변경 내용 없음)"}]
+                    }]
                 }
             ]
         }
@@ -483,27 +501,6 @@ def create_figma_update_rows(figma_data_list):
         rows.append(row)
 
     return rows
-
-def create_change_content(changes):
-    """
-    변경 내용을 ADF paragraph 리스트로 변환
-    """
-    paragraphs = []
-
-    for change in changes:
-        if isinstance(change, str):
-            paragraphs.append({
-                "type": "paragraph",
-                "content": [{"type": "text", "text": change}]
-            })
-        elif isinstance(change, dict):
-            # 링크 등
-            paragraphs.append({
-                "type": "paragraph",
-                "content": [change]
-            })
-
-    return paragraphs
 ```
 
 def append_to_description(jira_key, figma_section):
@@ -720,44 +717,69 @@ Worktree 분석 중...
 
 ### 예시 1: JIRA 댓글에 변경사항 작성
 
-**JIRA 티켓 CD-279에 댓글 작성**:
+**12월 30일 - 첫 번째 업데이트**:
 
+JIRA 댓글:
 ```
 https://www.figma.com/design/PsCISK2RuhCPs8FZurojeP/KIA-IDCX?node-id=10953-47730
 로그인 버튼 텍스트 변경: "로그인" → "Sign In"
 ```
 
-**동기화 실행**:
+동기화 실행:
 ```bash
 /jira-figma-sync CD-279
 ```
 
-**결과 (Description 화면 구성 테이블)**:
+**화면 구성 테이블 결과**:
 | 날짜 | 작성자 | 변경 내용 |
 |------|--------|----------|
-| 2025-12-30 | vision | 📄 C_0101<br>로그인 버튼 텍스트 변경: "로그인" → "Sign In"<br>🔗 [Figma에서 보기](링크) |
+| 2025-12-30 | vision | 📄 KIA IDCX > C_0101<br>로그인 버튼 텍스트 변경: "로그인" → "Sign In" |
 
-### 예시 2: Figma 댓글 자동 수집
+---
+
+**12월 31일 - 두 번째 업데이트 (누적)**:
+
+JIRA 댓글:
+```
+https://www.figma.com/design/PsCISK2RuhCPs8FZurojeP/KIA-IDCX?node-id=10953-47782
+See More 버튼 추가 및 약관 모달 레이아웃 수정
+```
+
+동기화 실행:
+```bash
+/jira-figma-sync CD-279
+```
+
+**화면 구성 테이블 결과 (누적)**:
+| 날짜 | 작성자 | 변경 내용 |
+|------|--------|----------|
+| 2025-12-30 | vision | 📄 KIA IDCX > C_0101<br>로그인 버튼 텍스트 변경: "로그인" → "Sign In" |
+| 2025-12-31 | vision | 📄 KIA IDCX > C_0101_disclaimer modal<br>See More 버튼 추가 및 약관 모달 레이아웃 수정 |
+
+---
+
+### 예시 2: Figma 댓글 자동 수집 (JIRA 댓글 설명 없을 때)
 
 **Figma에서 Frame에 댓글 작성**:
 ```
-"See More 버튼 추가 필요"
+"헤더 영역 패딩 16px → 20px 변경, 프로필 아이콘 크기 32px → 36px로 조정"
 ```
 
 **JIRA 댓글에 링크만 추가**:
 ```
-https://www.figma.com/design/xxx?node-id=10953-47782
+https://www.figma.com/design/xxx?node-id=10953-47800
 ```
 
-**동기화 실행**:
-```bash
-/jira-figma-sync CD-279
-```
-
-**결과**:
+**동기화 실행 후 결과**:
 | 날짜 | 작성자 | 변경 내용 |
 |------|--------|----------|
-| 2025-12-30 | vision | 📄 C_0101_disclaimer modal<br>💬 See More 버튼 추가 필요<br>🔗 [Figma에서 보기](링크) |
+| 2025-12-30 | vision | 📄 KIA IDCX > C_0101<br>로그인 버튼 텍스트 변경: "로그인" → "Sign In" |
+| 2025-12-31 | vision | 📄 KIA IDCX > C_0101_disclaimer modal<br>See More 버튼 추가 및 약관 모달 레이아웃 수정 |
+| 2026-01-02 | designer | 📄 KIA IDCX > Header<br>헤더 영역 패딩 16px → 20px 변경, 프로필 아이콘 크기 32px → 36px로 조정 |
+
+→ **Figma 댓글 전체 내용이 그대로 표시됨**
+
+---
 
 ### 예시 3: Description 포맷 자동 수정
 
@@ -774,6 +796,8 @@ https://www.figma.com/design/xxx?node-id=10953-47782
 **결과**:
 - ✅ 6섹션 구조 자동 생성 (요구사항, 해결방안, 디자인 의도, 화면 구성, Step, 결과)
 - ✅ 화면 구성 테이블에 Figma 업데이트 자동 추가
+
+---
 
 ### 예시 4: 전체 Worktree 동기화
 
