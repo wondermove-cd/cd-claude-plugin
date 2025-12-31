@@ -34,7 +34,15 @@ flowchart LR
 # 2. 사용자 플로우
 .ux-docs/USER_FLOWS.md
 
-# 3. 디자인 시스템
+# 3. 디자인 시스템 확인 (우선순위)
+# 3-1. 프로젝트 기존 디자인 시스템 확인
+package.json                     # MUI, Ant Design, Chakra UI 등 확인
+components/ui/                    # 기존 UI 컴포넌트 확인
+
+# 3-2. shadcn/ui 사용 (React/Next.js + 기존 시스템 없는 경우)
+.claude/skills/shadcn-ui.md       # shadcn 컴포넌트 참조
+
+# 3-3. 일반 디자인 토큰 (그 외의 경우)
 .ux-docs/DESIGN_TOKENS.md        # 색상, 타이포, 간격
 .ux-docs/UX_PATTERNS.md          # 기존 UX 패턴
 
@@ -99,6 +107,15 @@ flowchart LR
 
 #### 🎨 사용 컴포넌트
 
+<!-- React/Next.js 프로젝트인 경우 shadcn/ui 컴포넌트 사용 -->
+**shadcn/ui 컴포넌트 (React 프로젝트)**:
+- `Card` + `CardHeader` + `CardContent` - 카드 레이아웃
+- `Table` + `TableHeader` + `TableBody` - 데이터 테이블
+- `Button` - variant="default|secondary|outline"
+- `Badge` - 상태 표시용
+- `Skeleton` - 로딩 상태
+
+<!-- 기존 디자인 시스템이 있는 경우 -->
 **기존 디자인 시스템에서 재사용**:
 - `Header` - navigation 타입
 - `Card` - summary 타입

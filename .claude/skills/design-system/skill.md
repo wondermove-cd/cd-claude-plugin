@@ -18,6 +18,22 @@ allowed-tools: Read
 - "버튼", "카드", "색상", "타이포" 키워드 언급 시
 - `/ux spec` 커맨드 실행 시
 
+## 우선순위
+
+1. **프로젝트 기존 디자인 시스템 확인**
+   - `package.json` 확인 (MUI, Ant Design, Chakra UI 등)
+   - `/components/ui` 폴더 존재 여부
+   - 기존 시스템이 있으면 해당 시스템 사용
+
+2. **shadcn/ui 기본 사용**
+   - React/Next.js 프로젝트에서 기존 디자인 시스템이 없는 경우
+   - shadcn/ui 컴포넌트를 기본으로 사용
+   - 참조: `.claude/skills/shadcn-ui.md`
+
+3. **일반 디자인 토큰**
+   - 비 React 프로젝트나 일반적인 경우
+   - 아래 정의된 디자인 토큰 사용
+
 ## 디자인 시스템 구조
 
 ### 계층
