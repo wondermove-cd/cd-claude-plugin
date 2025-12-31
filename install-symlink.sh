@@ -18,8 +18,29 @@ echo -e "${BLUE} CD Claude Plugin - Symlink 설치${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
-# 플러그인 디렉토리 확인
-PLUGIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# 플러그인 디렉토리 설정
+PLUGIN_DIR="$HOME/Documents/Claude/cd-claude-plugin"
+
+# 플러그인 디렉토리가 없으면 GitHub에서 클론
+if [ ! -d "$PLUGIN_DIR" ]; then
+    echo "📥 플러그인을 GitHub에서 다운로드 중..."
+    echo ""
+    git clone git@github.com:wondermove-cd/cd-claude-plugin.git "$PLUGIN_DIR"
+
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ GitHub 클론 실패. SSH 키 설정을 확인하세요.${NC}"
+        echo "대체 방법: HTTPS로 클론"
+        git clone https://github.com/wondermove-cd/cd-claude-plugin.git "$PLUGIN_DIR"
+    fi
+    echo ""
+else
+    # 이미 있으면 최신 버전으로 업데이트
+    echo "🔄 플러그인 최신 버전 확인 중..."
+    cd "$PLUGIN_DIR"
+    git pull origin main
+    echo ""
+fi
+
 echo -e "${GREEN}✓${NC} 플러그인 디렉토리: $PLUGIN_DIR"
 
 # 대상 디렉토리 확인
