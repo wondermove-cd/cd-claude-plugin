@@ -7,7 +7,7 @@ argument-hint: [--force] [--dry-run]
 # /jira-push
 
 현재 Worktree 상태를 JIRA로 동기화합니다.
-**프로젝트 코드가 티켓 제목 prefix와 태그로 자동 추가됩니다.**
+**프로젝트(레이블) > 에픽 > 업무 > 하위 업무** 구조로 티켓을 생성합니다.
 
 ## 사용법
 
@@ -98,23 +98,29 @@ connector = JiraConnector(config)
 
 ### Step 2: Worktree 분석
 
-Worktree 구조 파싱 (3단계 계층):
+Worktree 구조 파싱 (4단계 계층):
 
 #### 계층 구조
-1. **Epic**: 프로젝트 또는 큰 기능 단위
-   - 예: "로그인 시스템", "대시보드 개발"
 
-2. **Task**: 구체적인 작업 단위
-   - 예: "로그인 화면 퍼블리싱", "회원가입 API 연동", "프로필 페이지 구현"
-   - 독립적으로 완료 가능한 단위
+1. **프로젝트** (레이블로 관리)
+   - 가장 큰 단위, 모든 티켓에 레이블로 추가
+   - 예: "SKUBER", "IDCX", "FLITE"
 
-3. **Sub-task**: 세부 구현 단위
-   - 예: "로그인 컴포넌트 제작", "validation 케이스 분기", "에러 메시지 처리"
-   - Task를 완료하기 위한 구체적인 작업
+2. **에픽** (상위 항목)
+   - 중/단기적 특정 목표를 가진 주요 업무 타이틀
+   - 데일리 리포트에 표시되는 대표 단위
+   - 예: "사용자 인증 시스템", "대시보드 개발", "결제 시스템"
 
-**구조 변경 사항**:
-- ~~Epic > Story > Task~~ (구 방식)
-- **Epic > Task > Sub-task** (신 방식) ✅
+3. **업무** (메인 티켓)
+   - 실질적인 태스크 단위, 구체적 작업 내용
+   - 에픽의 목표 달성을 위한 세부 단위
+   - 시작/마감 기한 필수 등록
+   - 예: "로그인 화면 퍼블리싱", "회원가입 API 구현"
+
+4. **하위 업무** (서브 티켓)
+   - 업무 수행을 위한 개인 to-do list
+   - 데일리/위클리 리포트에 미노출
+   - 예: "로그인 폼 컴포넌트 제작", "validation 로직 구현"
 
 ---
 
@@ -296,26 +302,29 @@ def create_description(problem, requirements, solution, design_intent, screens, 
 #### 새 항목: JIRA 이슈 생성
 
 ```python
-# Epic 생성 (프로젝트 레벨)
+# 프로젝트는 레이블로 관리
+project_labels = [project_code]  # 예: ["SKUBER"]
+
+# 에픽 생성 (중/단기 목표, 데일리 리포트에 표시)
 epic_result = connector.create_issue(
-    issue_type='에픽',  # JIRA 한글 이름 사용
+    issue_type='에픽',
     summary=format_title(epic['title'], project_code),
     description=create_description(
-        problem=epic.get('problem', '프로젝트 전체 목표'),
-        requirements=epic.get('requirements', ['주요 기능 구현']),
-        solution=epic.get('solution', '단계별 구현'),
-        design_intent=epic.get('design_intent', ''),
+        problem=epic.get('problem', '주요 목표 및 배경'),
+        requirements=epic.get('requirements', ['달성해야 할 핵심 목표']),
+        solution=epic.get('solution', '단계별 접근 방법'),
+        design_intent=epic.get('design_intent', '전체적인 방향성'),
         screens=epic.get('screens', []),
         steps=epic.get('steps', ['기획', '디자인', '개발', '테스트', '배포']),
-        result=epic.get('result', '프로젝트 완료')
+        result=epic.get('result', '목표 달성')
     ),
-    labels=get_labels(project_code) + ['epic', 'project']
+    labels=project_labels + ['epic']  # 프로젝트 레이블 추가
 )
 
-# Task 생성 (구체적 작업 단위)
-# 예: "로그인 화면 퍼블리싱", "회원가입 API 연동"
+# 업무 생성 (실질적 태스크, 시작/마감 기한 필수)
+# 예: "로그인 화면 퍼블리싱", "회원가입 API 구현"
 task_result = connector.create_issue(
-    issue_type='작업',  # Task type in Korean
+    issue_type='업무',
     summary=format_title(task['title'], project_code),
     description=create_description(
         problem=task.get('problem', '구현해야 할 기능'),
@@ -326,16 +335,17 @@ task_result = connector.create_issue(
         steps=task.get('steps', ['작업 순서']),
         result=task.get('result', '기능 구현 완료')
     ),
-    epic_link=epic_result['key'],  # Epic 링크 연결
-    labels=get_labels(project_code) + ['task'],
-    story_points=task.get('story_points', 3),  # 스토리 포인트
-    duedate=task.get('duedate', '')  # Due Date 설정
+    epic_link=epic_result['key'],  # 에픽 연결 (필수)
+    labels=project_labels + ['task'],  # 프로젝트 레이블 추가
+    start_date=task.get('start_date', ''),  # 시작 기한 (필수)
+    due_date=task.get('due_date', ''),  # 마감 기한 (필수)
+    story_points=task.get('story_points', 3)
 )
 
-# Sub-task 생성 (세부 구현 단위)
-# 예: "로그인 컴포넌트 제작", "validation 케이스 분기"
+# 하위 업무 생성 (개인 to-do, 리포트 미노출)
+# 예: "로그인 컴포넌트 제작", "validation 로직 구현"
 subtask_result = connector.create_issue(
-    issue_type='하위 작업',  # Sub-task in Korean
+    issue_type='하위 업무',
     summary=format_title(subtask['title'], project_code),
     description=create_description(
         problem=subtask.get('problem', '구현 세부사항'),
