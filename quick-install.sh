@@ -19,13 +19,9 @@ echo ""
 
 # Check if we're in a git repository
 if [ ! -d ".git" ]; then
-    echo -e "${YELLOW}⚠️  Warning: Current directory is not a git repository${NC}"
-    read -p "Continue anyway? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo -e "${RED}Installation cancelled${NC}"
-        exit 1
-    fi
+    echo -e "${YELLOW}ℹ️  Note: Current directory is not a git repository${NC}"
+    echo -e "${BLUE}   This is fine - the plugin will still work!${NC}"
+    echo ""
 fi
 
 # Check if .claude already exists
