@@ -99,13 +99,22 @@ connector = JiraConnector(config)
 ### Step 2: Worktree 분석
 
 Worktree 구조 파싱 (3단계 계층):
-- Epic 목록
-- Task 목록 (Epic 하위)
-- Subtask 목록 (Task 하위)
+
+#### 계층 구조
+1. **Epic**: 프로젝트 또는 큰 기능 단위
+   - 예: "로그인 시스템", "대시보드 개발"
+
+2. **Task**: 구체적인 작업 단위
+   - 예: "로그인 화면 퍼블리싱", "회원가입 API 연동", "프로필 페이지 구현"
+   - 독립적으로 완료 가능한 단위
+
+3. **Sub-task**: 세부 구현 단위
+   - 예: "로그인 컴포넌트 제작", "validation 케이스 분기", "에러 메시지 처리"
+   - Task를 완료하기 위한 구체적인 작업
 
 **구조 변경 사항**:
 - ~~Epic > Story > Task~~ (구 방식)
-- **Epic > Task > Subtask** (신 방식) ✅
+- **Epic > Task > Sub-task** (신 방식) ✅
 
 ---
 
@@ -287,46 +296,59 @@ def create_description(problem, requirements, solution, design_intent, screens, 
 #### 새 항목: JIRA 이슈 생성
 
 ```python
-# Epic 생성
+# Epic 생성 (프로젝트 레벨)
 epic_result = connector.create_issue(
     issue_type='에픽',  # JIRA 한글 이름 사용
     summary=format_title(epic['title'], project_code),
     description=create_description(
-        problem=epic.get('problem', ''),
-        requirements=epic.get('requirements', []),
-        steps=epic.get('steps', []),
-        result=epic.get('result', '작업 완료 후 업데이트 예정')
+        problem=epic.get('problem', '프로젝트 전체 목표'),
+        requirements=epic.get('requirements', ['주요 기능 구현']),
+        solution=epic.get('solution', '단계별 구현'),
+        design_intent=epic.get('design_intent', ''),
+        screens=epic.get('screens', []),
+        steps=epic.get('steps', ['기획', '디자인', '개발', '테스트', '배포']),
+        result=epic.get('result', '프로젝트 완료')
     ),
-    labels=get_labels(project_code)
+    labels=get_labels(project_code) + ['epic', 'project']
 )
 
-# Task 생성 (parent로 Epic 연결)
+# Task 생성 (구체적 작업 단위)
+# 예: "로그인 화면 퍼블리싱", "회원가입 API 연동"
 task_result = connector.create_issue(
-    issue_type='Task',
+    issue_type='작업',  # Task type in Korean
     summary=format_title(task['title'], project_code),
     description=create_description(
-        problem=task.get('problem', ''),
-        requirements=task.get('requirements', []),
-        steps=task.get('steps', []),
-        result=task.get('result', '작업 완료 후 업데이트 예정')
+        problem=task.get('problem', '구현해야 할 기능'),
+        requirements=task.get('requirements', ['기능 요구사항']),
+        solution=task.get('solution', '구현 방법'),
+        design_intent=task.get('design_intent', 'UI/UX 의도'),
+        screens=task.get('screens', ['관련 화면']),
+        steps=task.get('steps', ['작업 순서']),
+        result=task.get('result', '기능 구현 완료')
     ),
-    parent_key=epic_result['key'],
-    labels=get_labels(project_code),
-    duedate=task.get('duedate', '2026-01-02')  # Due Date 설정
+    epic_link=epic_result['key'],  # Epic 링크 연결
+    labels=get_labels(project_code) + ['task'],
+    story_points=task.get('story_points', 3),  # 스토리 포인트
+    duedate=task.get('duedate', '')  # Due Date 설정
 )
 
-# Subtask 생성 (parent로 Task 연결)
+# Sub-task 생성 (세부 구현 단위)
+# 예: "로그인 컴포넌트 제작", "validation 케이스 분기"
 subtask_result = connector.create_issue(
-    issue_type='하위 작업',  # JIRA 한글 이름 사용
+    issue_type='하위 작업',  # Sub-task in Korean
     summary=format_title(subtask['title'], project_code),
     description=create_description(
-        problem=subtask.get('problem', ''),
-        requirements=subtask.get('requirements', []),
-        steps=subtask.get('steps', []),
-        result=subtask.get('result', '작업 완료 후 업데이트 예정')
+        problem=subtask.get('problem', '구현 세부사항'),
+        requirements=subtask.get('requirements', ['세부 요구사항']),
+        solution=subtask.get('solution', '구현 방법'),
+        design_intent='',  # Sub-task는 디자인 의도 생략 가능
+        screens=[],  # Sub-task는 화면 구성 생략 가능
+        steps=subtask.get('steps', ['구현 단계']),
+        result=subtask.get('result', '완료 조건')
     ),
-    parent_key=task_result['key'],
-    labels=get_labels(project_code)
+    parent_key=task_result['key'],  # Task의 하위로 연결
+    labels=get_labels(project_code) + ['subtask'],
+    time_estimate=subtask.get('time_estimate', '2h')  # 예상 시간
 )
 
 # 완료된 항목은 Done으로 전환
